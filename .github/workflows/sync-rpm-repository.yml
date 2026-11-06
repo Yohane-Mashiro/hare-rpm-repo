@@ -31,15 +31,15 @@ jobs:
           set -euo pipefail
           rm -rf public
           mkdir -p public
-          release_json="$(curl --fail-with-body --silent --show-error \\
-            -H "Authorization: Bearer ${GH_TOKEN}" \\
-            -H 'Accept: application/vnd.github+json' \\
+          release_json="$(curl --fail-with-body --silent --show-error \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H 'Accept: application/vnd.github+json' \
             https://api.github.com/repos/farion1231/cc-switch/releases/latest)"
           tag="$(jq -r '.tag_name' <<<"${release_json}")"
           test -n "${tag}" -a "${tag}" != "null"
-          jq -r '.assets[] | select(.name | test("Linux-(x86_64|arm64)\\.rpm$")) | [.name, .browser_download_url] | @tsv' <<<"${release_json}" \\
+          jq -r '.assets[] | select(.name | test("Linux-(x86_64|arm64)\\.rpm$")) | [.name, .browser_download_url] | @tsv' <<<"${release_json}" \
             | while IFS=$'\t' read -r name url; do
-                curl --fail-with-body --location --silent --show-error --retry 3 \\
+                curl --fail-with-body --location --silent --show-error --retry 3 \
                   --output "public/${name}" "${url}"
               done
           test "$(find public -maxdepth 1 -name '*.rpm' -type f | wc -l)" -eq 2
