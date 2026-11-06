@@ -6,6 +6,8 @@
 - [X Minecraft Launcher](https://github.com/Voxelum/x-minecraft-launcher/releases)
 - [YAQMC](https://github.com/YAQMC/YAQMC/releases)
 - [Rayburst](https://github.com/AnInsomniacy/rayburst/releases)
+- [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases)
+- [FlClash](https://github.com/chen08209/FlClash/releases)
 
 GitHub Actions 每天自动运行，也可以手动触发。工作流会将所有上游 RPM 下载到同一个目录，使用 `createrepo_c` 生成一个统一的 `repodata/`，然后强制更新 `gh-pages` 分支。
 
@@ -25,6 +27,8 @@ sudo dnf install cc-switch
 sudo dnf install xmcl
 sudo dnf install yaqmc
 sudo dnf install rayburst
+sudo dnf install clash-verge-rev
+sudo dnf install flclash
 ```
 
 每次同步都会从头生成软件源，因此不会保留已经废弃的旧版本。目前本软件源没有提供 GPG 签名的软件源元数据，因此生成的配置使用 `gpgcheck=0`。上游 RPM 包通过 HTTPS 从 GitHub 下载。
