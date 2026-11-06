@@ -6,6 +6,8 @@ This is **one Fedora-compatible RPM repository** containing the latest x86_64 an
 - [X Minecraft Launcher](https://github.com/Voxelum/x-minecraft-launcher/releases)
 - [YAQMC](https://github.com/YAQMC/YAQMC/releases)
 - [Rayburst](https://github.com/AnInsomniacy/rayburst/releases)
+- [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases)
+- [FlClash](https://github.com/chen08209/FlClash/releases)
 
 GitHub Actions runs daily and can also be started manually. The workflow downloads all upstream RPMs into one directory, generates one `repodata/` directory with `createrepo_c`, and force-updates the `gh-pages` branch.
 
@@ -25,6 +27,8 @@ sudo dnf install cc-switch
 sudo dnf install xmcl
 sudo dnf install yaqmc
 sudo dnf install rayburst
+sudo dnf install clash-verge-rev
+sudo dnf install flclash
 ```
 
 The repository is regenerated from scratch on each run, so obsolete versions are not retained. It currently does not provide GPG-signed repository metadata, so `gpgcheck=0` is used. Upstream RPM assets are downloaded over HTTPS from GitHub.
