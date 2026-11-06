@@ -61,6 +61,7 @@ jobs:
           download_rpms 'AnInsomniacy/rayburst' 'Rayburst-.*\.(aarch64|x86_64)\.rpm$'
           download_rpms 'clash-verge-rev/clash-verge-rev' 'Clash\.Verge-.*\.(aarch64|x86_64)\.rpm$'
           download_rpms 'chen08209/FlClash' 'FlClash-.*-linux-(amd64|arm64)\.rpm$'
+          download_rpms 'nab138/iloader' 'iloader-linux-(aarch64|x86_64)\.rpm$'
 
       - name: Generate unified Fedora repository metadata
         run: |
