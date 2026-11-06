@@ -1,18 +1,23 @@
-# CC-Switch RPM repository
+# RPM repositories
 
-This repository publishes the latest x86_64 and arm64 RPM packages from [farion1231/cc-switch](https://github.com/farion1231/cc-switch/releases) as a Fedora-compatible DNF/YUM repository.
+This repository publishes the latest Linux RPM packages from these upstream projects as Fedora-compatible DNF/YUM repositories:
 
-The GitHub Actions workflow runs daily and can also be started manually. It downloads the latest upstream release, regenerates `repodata/` with `createrepo_c`, and force-updates the `gh-pages` branch with the repository contents.
+- [CC-Switch](https://github.com/farion1231/cc-switch/releases)
+- [X Minecraft Launcher](https://github.com/Voxelum/x-minecraft-launcher/releases)
+- [YAQMC](https://github.com/YAQMC/YAQMC/releases)
+- [Rayburst](https://github.com/AnInsomniacy/rayburst/releases)
 
-Install the repository with:
+The GitHub Actions workflow runs daily and can also be started manually. It downloads the latest x86_64 and ARM64/aarch64 RPM assets, regenerates each `repodata/` directory with `createrepo_c`, and force-updates the `gh-pages` branch.
+
+Install any repository with:
 
 ```bash
 sudo curl --fail --location \\
   --output /etc/yum.repos.d/cc-switch.repo \\
-  https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/cc-switch.repo
+  https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/cc-switch/cc-switch.repo
 sudo dnf install cc-switch
 ```
 
-The upstream RPM package metadata currently uses the package name `cc-switch`. Repository metadata is regenerated from scratch on each run, so obsolete versions are not retained.
+Replace `cc-switch` in both the filename and URL with `xmcl`, `yaqmc`, or `rayburst` for the other repositories. Each repository is regenerated from scratch, so obsolete versions are not retained.
 
-This repository currently does not provide a GPG-signed repository, so `gpgcheck=0` is used in the generated repo file. The upstream release assets are downloaded over HTTPS from GitHub.
+These repositories currently do not provide GPG-signed repository metadata, so `gpgcheck=0` is used in the generated `.repo` files. Upstream release assets are downloaded over HTTPS from GitHub.
