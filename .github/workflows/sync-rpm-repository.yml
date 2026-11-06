@@ -62,7 +62,7 @@ jobs:
           download_repo 'farion1231/cc-switch' 'cc-switch' 'Linux-(x86_64|arm64)\.rpm$'
           download_repo 'Voxelum/x-minecraft-launcher' 'xmcl' 'xmcl-.*-(aarch64|x86_64)\.rpm$'
           download_repo 'YAQMC/YAQMC' 'yaqmc' 'YAQMC-linux-(arm64|x64)\.rpm$'
-          download_repo 'AnInsomniacy/rayburst' 'rayburst' 'Rayburst-.*-(aarch64|x86_64)\.rpm$'
+          download_repo 'AnInsomniacy/rayburst' 'rayburst' 'Rayburst-.*\.(aarch64|x86_64)\.rpm$'
 
       - name: Publish repository branch
         run: |
