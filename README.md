@@ -29,7 +29,7 @@ sudo dnf install xmcl
 sudo dnf install YAQMC
 sudo dnf install rayburst
 sudo dnf install clash-verge
-sudo dnf install flclash
+sudo dnf install FlClash
 sudo dnf install iloader
 ```
 
