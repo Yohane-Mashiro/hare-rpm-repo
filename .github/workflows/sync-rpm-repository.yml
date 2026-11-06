@@ -1,0 +1,74 @@
+name: Sync CC-Switch RPM repository
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: rpm-repository
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install repository tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y createrepo-c jq
+
+      - name: Download latest upstream RPMs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p public
+          release_json="$(curl --fail-with-body --silent --show-error \\
+            -H "Authorization: Bearer ${GH_TOKEN}" \\
+            -H 'Accept: application/vnd.github+json' \\
+            https://api.github.com/repos/farion1231/cc-switch/releases/latest)"
+          tag="$(jq -r '.tag_name' <<<"${release_json}")"
+          test -n "${tag}" -a "${tag}" != "null"
+          jq -r '.assets[] | select(.name | test("Linux-(x86_64|arm64)\\.rpm$")) | [.name, .browser_download_url] | @tsv' <<<"${release_json}" \\
+            | while IFS=$'\t' read -r name url; do
+                curl --fail-with-body --location --silent --show-error --retry 3 \\
+                  --output "public/${name}" "${url}"
+              done
+          test "$(find public -maxdepth 1 -name '*.rpm' -type f | wc -l)" -eq 2
+          printf '%s\n' "${tag}" > public/UPSTREAM_VERSION
+
+      - name: Generate Fedora repository metadata
+        run: |
+          set -euo pipefail
+          createrepo_c --database public
+          cat > public/cc-switch.repo <<'REPO'
+          [cc-switch]
+          name=CC-Switch RPM Repository
+          baseurl=https://yohane-mashiro.github.io/hare-rpm-repo/
+          enabled=1
+          gpgcheck=0
+          repo_gpgcheck=0
+          REPO
+          sed -i 's/^          //' public/cc-switch.repo
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: sync
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
