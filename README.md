@@ -12,9 +12,7 @@ The GitHub Actions workflow runs daily and can also be started manually. It down
 Install this single repository:
 
 ```bash
-sudo curl --fail --location \\
-  --output /etc/yum.repos.d/hare-rpm-repo.repo \\
-  https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/hare-rpm-repo.repo
+sudo curl --fail --location --output /etc/yum.repos.d/hare-rpm-repo.repo https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/hare-rpm-repo.repo
 sudo dnf makecache
 ```
 
