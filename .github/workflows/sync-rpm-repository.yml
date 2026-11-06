@@ -66,9 +66,12 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          publish_dir=$(mktemp -d)
+          cp -a public/. "${publish_dir}/"
           git checkout --orphan gh-pages
           git rm -rf .
-          cp -a public/. .
+          rm -rf public
+          cp -a "${publish_dir}/." .
           git add .
           git commit -m "Sync CC-Switch RPM repository"
           git push origin gh-pages --force
