@@ -18,6 +18,7 @@ GitHub Actions 每天自动运行，也可以手动触发。工作流会将所�
 
 ```bash
 sudo curl --fail --location --output /etc/yum.repos.d/hare-rpm-repo.repo https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/hare-rpm-repo.repo
+sudo dnf clean all
 sudo dnf makecache
 ```
 
