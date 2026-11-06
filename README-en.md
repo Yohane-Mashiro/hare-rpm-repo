@@ -18,6 +18,7 @@ Install this single repository:
 
 ```bash
 sudo curl --fail --location --output /etc/yum.repos.d/hare-rpm-repo.repo https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/hare-rpm-repo.repo
+sudo dnf clean all
 sudo dnf makecache
 ```
 
