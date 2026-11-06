@@ -14,9 +14,7 @@ GitHub Actions 每天自动运行，也可以手动触发。工作流会将所�
 安装这个单一软件源：
 
 ```bash
-sudo curl --fail --location \\
-  --output /etc/yum.repos.d/hare-rpm-repo.repo \\
-  https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/hare-rpm-repo.repo
+sudo curl --fail --location --output /etc/yum.repos.d/hare-rpm-repo.repo https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/hare-rpm-repo.repo
 sudo dnf makecache
 ```
 
