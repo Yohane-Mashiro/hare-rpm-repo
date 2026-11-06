@@ -1,4 +1,4 @@
-name: Sync CC-Switch RPM repository
+name: Sync RPM repositories
 
 on:
   schedule:
@@ -24,44 +24,53 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y createrepo-c jq
 
-      - name: Download latest upstream RPMs
+      - name: Download latest RPMs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           rm -rf public
           mkdir -p public
-          release_json="$(curl --fail-with-body --silent --show-error \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H 'Accept: application/vnd.github+json' \
-            https://api.github.com/repos/farion1231/cc-switch/releases/latest)"
-          tag="$(jq -r '.tag_name' <<<"${release_json}")"
-          test -n "${tag}" -a "${tag}" != "null"
-          jq -r '.assets[] | select(.name | test("Linux-(x86_64|arm64)\\.rpm$")) | [.name, .browser_download_url] | @tsv' <<<"${release_json}" \
-            | while IFS=$'\t' read -r name url; do
-                curl --fail-with-body --location --silent --show-error --retry 3 \
-                  --output "public/${name}" "${url}"
-              done
-          test "$(find public -maxdepth 1 -name '*.rpm' -type f | wc -l)" -eq 2
-          printf '%s\n' "${tag}" > public/UPSTREAM_VERSION
 
-      - name: Generate Fedora repository metadata
-        run: |
-          set -euo pipefail
-          createrepo_c --database public
-          cat > public/cc-switch.repo <<'REPO'
-          [cc-switch]
-          name=CC-Switch RPM Repository
-          baseurl=https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/
-          enabled=1
-          gpgcheck=0
-          repo_gpgcheck=0
-          REPO
-          sed -i 's/^          //' public/cc-switch.repo
+          download_repo() {
+            local upstream="$1"
+            local slug="$2"
+            local pattern="$3"
+            local repo_json tag
+            repo_json="$(curl --fail-with-body --silent --show-error \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/${upstream}/releases/latest")"
+            tag="$(jq -r '.tag_name' <<<"${repo_json}")"
+            test -n "${tag}" -a "${tag}" != "null"
+            mkdir -p "public/${slug}"
+            mapfile -t assets < <(jq -r --arg pattern "${pattern}" \
+              '.assets[] | select(.name | test($pattern)) | [.name, .browser_download_url] | @tsv' \
+              <<<"${repo_json}")
+            test "${#assets[@]}" -eq 2
+            for asset in "${assets[@]}"; do
+              IFS=$'\t' read -r name url <<<"${asset}"
+              curl --fail-with-body --location --silent --show-error --retry 3 \
+                --output "public/${slug}/${name}" "${url}"
+            done
+            printf '%s\n' "${tag}" > "public/${slug}/UPSTREAM_VERSION"
+            createrepo_c --database "public/${slug}"
+            cat > "public/${slug}/${slug}.repo" <<REPO
+[${slug}]
+name=${slug} RPM Repository
+baseurl=https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/${slug}/
+enabled=1
+gpgcheck=0
+repo_gpgcheck=0
+REPO
+          }
+
+          download_repo 'farion1231/cc-switch' 'cc-switch' 'Linux-(x86_64|arm64)\\.rpm$'
+          download_repo 'Voxelum/x-minecraft-launcher' 'xmcl' 'xmcl-.*-(aarch64|x86_64)\\.rpm$'
+          download_repo 'YAQMC/YAQMC' 'yaqmc' 'YAQMC-linux-(arm64|x64)\\.rpm$'
+          download_repo 'AnInsomniacy/rayburst' 'rayburst' 'Rayburst-.*-(aarch64|x86_64)\\.rpm$'
 
       - name: Publish repository branch
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
@@ -73,5 +82,5 @@ jobs:
           rm -rf public
           cp -a "${publish_dir}/." .
           git add .
-          git commit -m "Sync CC-Switch RPM repository"
+          git commit -m "Sync RPM repositories"
           git push origin gh-pages --force
