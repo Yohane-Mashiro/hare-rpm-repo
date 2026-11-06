@@ -8,6 +8,7 @@ This is **one Fedora-compatible RPM repository** containing the latest x86_64 an
 - [Rayburst](https://github.com/AnInsomniacy/rayburst/releases)
 - [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases)
 - [FlClash](https://github.com/chen08209/FlClash/releases)
+- [iloader](https://github.com/nab138/iloader/releases)
 
 GitHub Actions runs daily and can also be started manually. The workflow downloads all upstream RPMs into one directory, generates one `repodata/` directory with `createrepo_c`, and force-updates the `gh-pages` branch.
 
@@ -29,8 +30,11 @@ sudo dnf install yaqmc
 sudo dnf install rayburst
 sudo dnf install clash-verge-rev
 sudo dnf install flclash
+sudo dnf install iloader
 ```
 
 The repository is regenerated from scratch on each run, so obsolete versions are not retained. It currently does not provide GPG-signed repository metadata, so `gpgcheck=0` is used. Upstream RPM assets are downloaded over HTTPS from GitHub.
 
 For the Chinese documentation, see [README.md](README.md).
+
+> WPS Linux is not included yet because the official page currently does not expose a verifiable stable RPM download URL.
