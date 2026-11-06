@@ -55,14 +55,8 @@ jobs:
             done
             printf '%s\n' "${tag}" > "public/${slug}/UPSTREAM_VERSION"
             createrepo_c --database "public/${slug}"
-            cat > "public/${slug}/${slug}.repo" <<REPO
-[${slug}]
-name=${slug} RPM Repository
-baseurl=https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/${slug}/
-enabled=1
-gpgcheck=0
-repo_gpgcheck=0
-REPO
+            printf '[%s]\nname=%s RPM Repository\nbaseurl=https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/%s/\nenabled=1\ngpgcheck=0\nrepo_gpgcheck=0\n' \
+              "${slug}" "${slug}" "${slug}" > "public/${slug}/${slug}.repo"
           }
 
           download_repo 'farion1231/cc-switch' 'cc-switch' 'Linux-(x86_64|arm64)\\.rpm$'
