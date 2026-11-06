@@ -65,7 +65,7 @@ jobs:
       - name: Generate unified Fedora repository metadata
         run: |
           set -euo pipefail
-          createrepo_c --database public
+          createrepo_c --no-database --simple-md-filenames public
           printf '%s\n' \
             '[hare-rpm-repo]' \
             'name=Hare RPM Repository' \
