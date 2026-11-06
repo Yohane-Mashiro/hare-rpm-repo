@@ -26,9 +26,9 @@ Then install packages by their normal package names:
 ```bash
 sudo dnf install cc-switch
 sudo dnf install xmcl
-sudo dnf install yaqmc
+sudo dnf install YAQMC
 sudo dnf install rayburst
-sudo dnf install clash-verge-rev
+sudo dnf install clash-verge
 sudo dnf install flclash
 sudo dnf install iloader
 ```
