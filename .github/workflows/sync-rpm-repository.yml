@@ -1,4 +1,4 @@
-name: Sync RPM repositories
+name: Sync RPM repository
 
 on:
   schedule:
@@ -31,11 +31,11 @@ jobs:
           set -euo pipefail
           rm -rf public
           mkdir -p public
+          : > public/UPSTREAM_VERSIONS
 
-          download_repo() {
+          download_rpms() {
             local upstream="$1"
-            local slug="$2"
-            local pattern="$3"
+            local pattern="$2"
             local repo_json tag
             repo_json="$(curl --fail-with-body --silent --show-error \
               -H "Authorization: Bearer ${GH_TOKEN}" \
@@ -43,7 +43,6 @@ jobs:
               "https://api.github.com/repos/${upstream}/releases/latest")"
             tag="$(jq -r '.tag_name' <<<"${repo_json}")"
             test -n "${tag}" -a "${tag}" != "null"
-            mkdir -p "public/${slug}"
             mapfile -t assets < <(jq -r --arg pattern "${pattern}" \
               '.assets[] | select(.name | test($pattern)) | [.name, .browser_download_url] | @tsv' \
               <<<"${repo_json}")
@@ -51,18 +50,28 @@ jobs:
             for asset in "${assets[@]}"; do
               IFS=$'\t' read -r name url <<<"${asset}"
               curl --fail-with-body --location --silent --show-error --retry 3 \
-                --output "public/${slug}/${name}" "${url}"
+                --output "public/${name}" "${url}"
             done
-            printf '%s\n' "${tag}" > "public/${slug}/UPSTREAM_VERSION"
-            createrepo_c --database "public/${slug}"
-            printf '[%s]\nname=%s RPM Repository\nbaseurl=https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/%s/\nenabled=1\ngpgcheck=0\nrepo_gpgcheck=0\n' \
-              "${slug}" "${slug}" "${slug}" > "public/${slug}/${slug}.repo"
+            printf '%s %s\n' "${upstream}" "${tag}" >> public/UPSTREAM_VERSIONS
           }
 
-          download_repo 'farion1231/cc-switch' 'cc-switch' 'Linux-(x86_64|arm64)\.rpm$'
-          download_repo 'Voxelum/x-minecraft-launcher' 'xmcl' 'xmcl-.*-(aarch64|x86_64)\.rpm$'
-          download_repo 'YAQMC/YAQMC' 'yaqmc' 'YAQMC-linux-(arm64|x64)\.rpm$'
-          download_repo 'AnInsomniacy/rayburst' 'rayburst' 'Rayburst-.*\.(aarch64|x86_64)\.rpm$'
+          download_rpms 'farion1231/cc-switch' 'Linux-(x86_64|arm64)\.rpm$'
+          download_rpms 'Voxelum/x-minecraft-launcher' 'xmcl-.*-(aarch64|x86_64)\.rpm$'
+          download_rpms 'YAQMC/YAQMC' 'YAQMC-linux-(arm64|x64)\.rpm$'
+          download_rpms 'AnInsomniacy/rayburst' 'Rayburst-.*\.(aarch64|x86_64)\.rpm$'
+
+      - name: Generate unified Fedora repository metadata
+        run: |
+          set -euo pipefail
+          createrepo_c --database public
+          printf '%s\n' \
+            '[hare-rpm-repo]' \
+            'name=Hare RPM Repository' \
+            'baseurl=https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/' \
+            'enabled=1' \
+            'gpgcheck=0' \
+            'repo_gpgcheck=0' \
+            > public/hare-rpm-repo.repo
 
       - name: Publish repository branch
         run: |
@@ -76,5 +85,5 @@ jobs:
           rm -rf public
           cp -a "${publish_dir}/." .
           git add .
-          git commit -m "Sync RPM repositories"
+          git commit -m 'Sync unified RPM repository'
           git push origin gh-pages --force
