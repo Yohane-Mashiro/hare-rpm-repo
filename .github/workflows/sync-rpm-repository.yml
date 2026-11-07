@@ -22,7 +22,7 @@ jobs:
       - name: Install repository tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y createrepo-c jq
+          sudo apt-get install -y createrepo-c jq zstd
 
       - name: Generate repository metadata with official links
         env:
@@ -71,6 +71,7 @@ jobs:
           python - "${links_file}" <<'PY'
           import gzip
           import hashlib
+          import subprocess
           import sys
           import xml.etree.ElementTree as ET
           from pathlib import Path
@@ -82,9 +83,36 @@ jobs:
                   links[name] = url
 
           repodata = Path("public/repodata")
-          for metadata in repodata.glob("*.xml.gz"):
-              with gzip.open(metadata, "rb") as file:
-                  root = ET.fromstring(file.read())
+          def read_metadata(path):
+              if path.suffix == ".gz":
+                  with gzip.open(path, "rb") as file:
+                      return file.read()
+              if path.suffix == ".zst":
+                  return subprocess.run(
+                      ["zstd", "--quiet", "--decompress", "--stdout", str(path)],
+                      check=True,
+                      capture_output=True,
+                  ).stdout
+              raise ValueError(f"Unsupported metadata compression: {path}")
+
+          def write_metadata(path, payload):
+              if path.suffix == ".gz":
+                  with gzip.open(path, "wb", compresslevel=9) as file:
+                      file.write(payload)
+                  return
+              if path.suffix == ".zst":
+                  result = subprocess.run(
+                      ["zstd", "--quiet", "--stdout", "--compress", "-19"],
+                      input=payload,
+                      check=True,
+                      capture_output=True,
+                  )
+                  path.write_bytes(result.stdout)
+                  return
+              raise ValueError(f"Unsupported metadata compression: {path}")
+
+          for metadata in repodata.glob("*.xml.*"):
+              root = ET.fromstring(read_metadata(metadata))
               changed = False
               for location in root.iter():
                   if location.tag.rsplit("}", 1)[-1] != "location":
@@ -96,8 +124,7 @@ jobs:
                       changed = True
               if changed:
                   payload = ET.tostring(root, encoding="utf-8", xml_declaration=True)
-                  with gzip.open(metadata, "wb", compresslevel=9) as file:
-                      file.write(payload)
+                  write_metadata(metadata, payload)
 
           repomd = repodata / "repomd.xml"
           tree = ET.parse(repomd)
