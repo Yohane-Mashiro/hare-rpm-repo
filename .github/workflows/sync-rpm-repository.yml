@@ -71,6 +71,7 @@ jobs:
           python - "${links_file}" <<'PY'
           import gzip
           import hashlib
+          import re
           import subprocess
           import sys
           import xml.etree.ElementTree as ET
@@ -129,34 +130,35 @@ jobs:
                   write_metadata(metadata, payload)
 
           repomd = repodata / "repomd.xml"
-          tree = ET.parse(repomd)
-          root = tree.getroot()
-          ET.register_namespace("", "http://linux.duke.edu/metadata/repo")
-          for data in root:
-              location = next(
-                  (child for child in data
-                   if child.tag.rsplit("}", 1)[-1] == "location"),
-                  None,
-              )
+          document = repomd.read_text(encoding="utf-8")
+
+          def update_repomd_data(match):
+              block = match.group(0)
+              location = re.search(r'<(?:\w+:)?location href="([^"]+)"', block)
               if location is None:
-                  continue
-              path = repodata / Path(location.attrib["href"]).name
+                  return block
+              path = repodata / Path(location.group(1)).name
               digest = hashlib.sha256(path.read_bytes()).hexdigest()
-              checksum = next(
-                  (child for child in data
-                   if child.tag.rsplit("}", 1)[-1] == "checksum"),
-                  None,
+              block = re.sub(
+                  r'(<(?:\w+:)?checksum type="sha256">)[^<]+(</(?:\w+:)?checksum>)',
+                  rf'\g<1>{digest}\g<2>',
+                  block,
+                  count=1,
               )
-              size = next(
-                  (child for child in data
-                   if child.tag.rsplit("}", 1)[-1] == "size"),
-                  None,
+              return re.sub(
+                  r'(<(?:\w+:)?size>)[^<]+(</(?:\w+:)?size>)',
+                  rf'\g<1>{path.stat().st_size}\g<2>',
+                  block,
+                  count=1,
               )
-              if checksum is not None:
-                  checksum.text = digest
-              if size is not None:
-                  size.text = str(path.stat().st_size)
-          tree.write(repomd, encoding="utf-8", xml_declaration=True)
+
+          document = re.sub(
+              r'<(?:\w+:)?data type="[^"]+">.*?</(?:\w+:)?data>',
+              update_repomd_data,
+              document,
+              flags=re.DOTALL,
+          )
+          repomd.write_text(document, encoding="utf-8")
           PY
 
           while IFS=$'\t' read -r name url; do
