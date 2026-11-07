@@ -24,16 +24,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y createrepo-c jq
 
-      - name: Download latest RPMs
+      - name: Generate repository metadata with official links
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           rm -rf public
           mkdir -p public
-          : > public/UPSTREAM_VERSIONS
+          links_file="$(mktemp)"
+          rpm_dir="$(mktemp -d)"
 
-          download_rpms() {
+          add_release_links() {
             local upstream="$1"
             local pattern="$2"
             local repo_json tag
@@ -44,29 +45,97 @@ jobs:
             tag="$(jq -r '.tag_name' <<<"${repo_json}")"
             test -n "${tag}" -a "${tag}" != "null"
             mapfile -t assets < <(jq -r --arg pattern "${pattern}" \
-              '.assets[] | select(.name | test($pattern)) | [.name, .browser_download_url] | @tsv' \
+              '.assets[] | select(.name | test($pattern)) |
+                [.name, .browser_download_url] | @tsv' \
               <<<"${repo_json}")
             test "${#assets[@]}" -eq 2
             for asset in "${assets[@]}"; do
               IFS=$'\t' read -r name url <<<"${asset}"
               curl --fail-with-body --location --silent --show-error --retry 3 \
-                --output "public/${name}" "${url}"
+                --output "${rpm_dir}/${name}" "${url}"
+              printf '%s\t%s\n' "${name}" "${url}" >> "${links_file}"
             done
-            printf '%s %s\n' "${upstream}" "${tag}" >> public/UPSTREAM_VERSIONS
           }
 
-          download_rpms 'farion1231/cc-switch' 'Linux-(x86_64|arm64)\.rpm$'
-          download_rpms 'Voxelum/x-minecraft-launcher' 'xmcl-.*-(aarch64|x86_64)\.rpm$'
-          download_rpms 'YAQMC/YAQMC' 'YAQMC-linux-(arm64|x64)\.rpm$'
-          download_rpms 'AnInsomniacy/rayburst' 'Rayburst-.*\.(aarch64|x86_64)\.rpm$'
-          download_rpms 'clash-verge-rev/clash-verge-rev' 'Clash\.Verge-.*\.(aarch64|x86_64)\.rpm$'
-          download_rpms 'chen08209/FlClash' 'FlClash-.*-linux-(amd64|arm64)\.rpm$'
-          download_rpms 'nab138/iloader' 'iloader-linux-(aarch64|x86_64)\.rpm$'
+          add_release_links 'farion1231/cc-switch' 'Linux-(x86_64|arm64)\.rpm$'
+          add_release_links 'Voxelum/x-minecraft-launcher' 'xmcl-.*-(aarch64|x86_64)\.rpm$'
+          add_release_links 'YAQMC/YAQMC' 'YAQMC-linux-(arm64|x64)\.rpm$'
+          add_release_links 'AnInsomniacy/rayburst' 'Rayburst-.*\.(aarch64|x86_64)\.rpm$'
+          add_release_links 'clash-verge-rev/clash-verge-rev' 'Clash\.Verge-.*\.(aarch64|x86_64)\.rpm$'
+          add_release_links 'chen08209/FlClash' 'FlClash-.*-linux-(amd64|arm64)\.rpm$'
+          add_release_links 'nab138/iloader' 'iloader-linux-(aarch64|x86_64)\.rpm$'
 
-      - name: Generate unified Fedora repository metadata
-        run: |
-          set -euo pipefail
-          createrepo_c --no-database --simple-md-filenames public
+          cp -a "${rpm_dir}/." public/
+          createrepo_c --no-database --simple-md-filenames --compress-type=gz public
+
+          python - "${links_file}" <<'PY'
+          import gzip
+          import hashlib
+          import sys
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          links = {}
+          with open(sys.argv[1], encoding="utf-8") as file:
+              for line in file:
+                  name, url = line.rstrip("\n").split("\t", 1)
+                  links[name] = url
+
+          repodata = Path("public/repodata")
+          for metadata in repodata.glob("*.xml.gz"):
+              with gzip.open(metadata, "rb") as file:
+                  root = ET.fromstring(file.read())
+              changed = False
+              for location in root.iter():
+                  if location.tag.rsplit("}", 1)[-1] != "location":
+                      continue
+                  href = location.attrib.get("href", "")
+                  name = Path(href).name
+                  if name in links:
+                      location.set("href", links[name])
+                      changed = True
+              if changed:
+                  payload = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+                  with gzip.open(metadata, "wb", compresslevel=9) as file:
+                      file.write(payload)
+
+          repomd = repodata / "repomd.xml"
+          tree = ET.parse(repomd)
+          root = tree.getroot()
+          for data in root:
+              location = next(
+                  (child for child in data
+                   if child.tag.rsplit("}", 1)[-1] == "location"),
+                  None,
+              )
+              if location is None:
+                  continue
+              path = repodata / Path(location.attrib["href"]).name
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              checksum = next(
+                  (child for child in data
+                   if child.tag.rsplit("}", 1)[-1] == "checksum"),
+                  None,
+              )
+              size = next(
+                  (child for child in data
+                   if child.tag.rsplit("}", 1)[-1] == "size"),
+                  None,
+              )
+              if checksum is not None:
+                  checksum.text = digest
+              if size is not None:
+                  size.text = str(path.stat().st_size)
+          tree.write(repomd, encoding="utf-8", xml_declaration=True)
+          PY
+
+          while IFS=$'\t' read -r name url; do
+            url_html="$(jq -nr --arg value "${url}" '$value | @html')"
+            name_html="$(jq -nr --arg value "${name}" '$value | @html')"
+            printf '<li><a href="%s">%s</a></li>\n' "${url_html}" "${name_html}"
+          done < "${links_file}" > public/downloads.html
+
+          rm -f public/*.rpm
           printf '%s\n' \
             '[hare-rpm-repo]' \
             'name=Hare RPM Repository' \
@@ -76,7 +145,7 @@ jobs:
             'repo_gpgcheck=0' \
             > public/hare-rpm-repo.repo
 
-      - name: Publish repository branch
+      - name: Publish RPM repository metadata
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
@@ -88,5 +157,5 @@ jobs:
           rm -rf public
           cp -a "${publish_dir}/." .
           git add .
-          git commit -m 'Sync unified RPM repository'
+          git commit -m 'Sync RPM repository metadata'
           git push origin gh-pages --force

@@ -1,6 +1,6 @@
 # Hare RPM 软件源
 
-这是一个**单一的 Fedora 兼容 RPM 软件源**，包含以下项目的最新 x86_64 和 ARM64/aarch64 RPM 包：
+这是一个 Fedora 兼容 RPM 软件源，包含以下项目最新 x86_64 和 ARM64/aarch64 RPM 包：
 
 - [CC-Switch](https://github.com/farion1231/cc-switch/releases)
 - [X Minecraft Launcher](https://github.com/Voxelum/x-minecraft-launcher/releases)
@@ -10,11 +10,11 @@
 - [FlClash](https://github.com/chen08209/FlClash/releases)
 - [iloader](https://github.com/nab138/iloader/releases)
 
-GitHub Actions 每天自动运行，也可以手动触发。工作流会将所有上游 RPM 下载到同一个目录，使用 `createrepo_c` 生成一个统一的 `repodata/`，然后强制更新 `gh-pages` 分支。
+GitHub Actions 每天自动运行，也可以手动触发。工作流会临时下载 RPM 生成软件源元数据，然后删除 RPM 文件，并把元数据中的下载地址改为各项目的官方 GitHub Release 链接。因此 `gh-pages` 只保存少量元数据，不保存 RPM 文件。
 
 ## 使用方式
 
-安装这个单一软件源：
+安装软件源配置：
 
 ```bash
 sudo curl --fail --location --output /etc/yum.repos.d/hare-rpm-repo.repo https://raw.githubusercontent.com/Yohane-Mashiro/hare-rpm-repo/gh-pages/hare-rpm-repo.repo
@@ -22,19 +22,7 @@ sudo dnf clean all
 sudo dnf makecache
 ```
 
-然后使用正常的软件包名安装：
-
-```bash
-sudo dnf install cc-switch
-sudo dnf install xmcl
-sudo dnf install YAQMC
-sudo dnf install rayburst
-sudo dnf install clash-verge
-sudo dnf install FlClash
-sudo dnf install iloader
-```
-
-每次同步都会从头生成软件源，因此不会保留已经废弃的旧版本。目前本软件源没有提供 GPG 签名的软件源元数据，因此生成的配置使用 `gpgcheck=0`。上游 RPM 包通过 HTTPS 从 GitHub 下载。
+然后使用正常的软件包名安装。RPM 文件会直接从上游项目的官方 HTTPS 链接下载。
 
 英文版文档请参阅 [README-en.md](README-en.md)。
 
