@@ -113,6 +113,8 @@ jobs:
 
           for metadata in repodata.glob("*.xml.*"):
               root = ET.fromstring(read_metadata(metadata))
+              namespace = root.tag.split("}", 1)[0].strip("{")
+              ET.register_namespace("", namespace)
               changed = False
               for location in root.iter():
                   if location.tag.rsplit("}", 1)[-1] != "location":
@@ -129,6 +131,7 @@ jobs:
           repomd = repodata / "repomd.xml"
           tree = ET.parse(repomd)
           root = tree.getroot()
+          ET.register_namespace("", "http://linux.duke.edu/metadata/repo")
           for data in root:
               location = next(
                   (child for child in data
