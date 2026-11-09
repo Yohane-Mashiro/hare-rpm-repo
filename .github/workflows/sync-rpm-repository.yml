@@ -37,6 +37,7 @@ jobs:
           add_release_links() {
             local upstream="$1"
             local pattern="$2"
+            local minimum_assets="${3:-2}"
             local repo_json tag
             repo_json="$(curl --fail-with-body --silent --show-error \
               -H "Authorization: Bearer ${GH_TOKEN}" \
@@ -48,7 +49,7 @@ jobs:
               '.assets[] | select(.name | test($pattern)) |
                 [.name, .browser_download_url] | @tsv' \
               <<<"${repo_json}")
-            test "${#assets[@]}" -eq 2
+            test "${#assets[@]}" -ge "${minimum_assets}"
             for asset in "${assets[@]}"; do
               IFS=$'\t' read -r name url <<<"${asset}"
               curl --fail-with-body --location --silent --show-error --retry 3 \
@@ -64,6 +65,7 @@ jobs:
           add_release_links 'clash-verge-rev/clash-verge-rev' 'Clash\.Verge-.*\.(aarch64|x86_64)\.rpm$'
           add_release_links 'chen08209/FlClash' 'FlClash-.*-linux-(amd64|arm64)\.rpm$'
           add_release_links 'nab138/iloader' 'iloader-linux-(aarch64|x86_64)\.rpm$'
+          add_release_links 'Yohane-Mashiro/Tyranor-Next-linux' 'tyranor-next-.*\.rpm$' 3
 
           cp -a "${rpm_dir}/." public/
           createrepo_c --no-database --simple-md-filenames --compress-type=gz public

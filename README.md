@@ -9,6 +9,7 @@
 - [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases)
 - [FlClash](https://github.com/chen08209/FlClash/releases)
 - [iloader](https://github.com/nab138/iloader/releases)
+- [Tyranor Next Linux](https://github.com/Yohane-Mashiro/Tyranor-Next-linux/releases)
 
 GitHub Actions 每天自动运行，也可以手动触发。工作流会临时下载 RPM 生成软件源元数据，然后删除 RPM 文件，并把元数据中的下载地址改为各项目的官方 GitHub Release 链接。因此 `gh-pages` 只保存少量元数据，不保存 RPM 文件。
 
