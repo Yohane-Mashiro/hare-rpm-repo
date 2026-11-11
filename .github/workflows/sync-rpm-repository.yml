@@ -66,6 +66,7 @@ jobs:
           add_release_links 'chen08209/FlClash' 'FlClash-.*-linux-(amd64|arm64)\.rpm$'
           add_release_links 'nab138/iloader' 'iloader-linux-(aarch64|x86_64)\.rpm$'
           add_release_links 'Yohane-Mashiro/Tyranor-Next-linux' 'tyranor-next-.*\.rpm$' 3
+          add_release_links 'chthollyphile/folia-major' 'folia-major-.*-(aarch64|x86_64)\.rpm$'
 
           cp -a "${rpm_dir}/." public/
           createrepo_c --no-database --simple-md-filenames --compress-type=gz public

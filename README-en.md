@@ -10,6 +10,7 @@ This is a Fedora-compatible RPM repository containing the latest x86_64 and ARM6
 - [FlClash](https://github.com/chen08209/FlClash/releases)
 - [iloader](https://github.com/nab138/iloader/releases)
 - [Tyranor Next Linux](https://github.com/Yohane-Mashiro/Tyranor-Next-linux/releases)
+- [Folia Major](https://github.com/chthollyphile/folia-major/releases)
 
 GitHub Actions runs daily and can also be started manually. It temporarily downloads RPMs to generate repository metadata, then removes them and rewrites the metadata to use each project's official GitHub Release URLs. The `gh-pages` branch therefore stores only small metadata files, not RPM packages.
 
